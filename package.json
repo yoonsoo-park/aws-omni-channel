@@ -49,12 +49,8 @@
 	},
 	"jest": {
 		"preset": "ts-jest/presets/js-with-babel",
-		"roots": [
-			"<rootDir>/deploy/test"
-		],
-		"testMatch": [
-			"**/*.test.ts"
-		],
+		"roots": ["<rootDir>/deploy/test"],
+		"testMatch": ["**/*.test.ts"],
 		"transform": {
 			"^.+\\.tsx?$": [
 				"ts-jest",
@@ -63,13 +59,11 @@
 				}
 			]
 		},
-		"transformIgnorePatterns": [
-			"node_modules/"
-		]
+		"transformIgnorePatterns": ["node_modules/"]
 	},
 	"license": "UNLICENSED",
 	"main": "index.js",
-	"name": "@ncino/ncino-app-template",
+	"name": "@ncino/ncino-omni-channel",
 	"release": {
 		"branches": [
 			"release",
@@ -99,28 +93,32 @@
 			[
 				"@semantic-release/exec",
 				{
-					"publishCmd": "$DEVOPS_SCRIPTS_PATH/push-s3-artifact.sh ncino-app-template $GIT_BRANCH $COMMIT_SHA1 ${nextRelease.version}"
+					"publishCmd": "$DEVOPS_SCRIPTS_PATH/push-s3-artifact.sh ncino-omni-channel $GIT_BRANCH $COMMIT_SHA1 ${nextRelease.version}"
 				}
 			]
 		]
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/yoonsoo-park/aws-app-template"
+		"url": "https://github.com/yoonsoo-park/aws-omni-channel"
 	},
 	"scripts": {
-		"aws:deploy": "cdk deploy AppTemplate-ComputeStack-$(whoami)-blue -c suffix=$(whoami) -c stage=blue --require-approval never",
-		"aws:deploy:green": "cdk deploy AppTemplate-ComputeStack-$(whoami)-green -c suffix=$(whoami) -c stage=green --require-approval never",
-		"aws:destroy": "cdk destroy AppTemplate-ApiStack-$suffix -c suffix=$suffix --force",
-		"aws:mock:deploy": "cdk deploy AppTemplate-MockServices-$(whoami) -c suffix=$(whoami) --require-approval never",
-		"aws:mock:destroy": "cdk destroy AppTemplate-MockServices-$(whoami) -c suffix=$(whoami) --force",
+		"aws:deploy": "cdk deploy OmniChannel-ComputeStack-$(whoami)-blue -c suffix=$(whoami) -c stage=blue --require-approval never",
+		"aws:deploy:green": "cdk deploy OmniChannel-ComputeStack-$(whoami)-green -c suffix=$(whoami) -c stage=green --require-approval never",
+		"aws:destroy": "cdk destroy OmniChannel-ApiStack-$suffix -c suffix=$suffix --force",
+		"aws:mock:deploy": "cdk deploy OmniChannel-MockServices-$(whoami) -c suffix=$(whoami) --require-approval never",
+		"aws:mock:destroy": "cdk destroy OmniChannel-MockServices-$(whoami) -c suffix=$(whoami) --force",
+		"aws:deploy:all": "cdk deploy OmniChannel-ApiStack-$(whoami) OmniChannel-ComputeStack-$(whoami)-blue -c suffix=$(whoami) -c stage=blue --require-approval never",
 		"build": "tsc",
 		"format": "eslint . --fix --ext .js,.ts --quiet",
 		"prebuild": "npm run format",
 		"pretest": "npm run build",
 		"semantic-release": "npx semantic-release",
 		"test": "jest --passWithNoTests",
-		"watch": "tsc -w"
+		"watch": "tsc -w",
+		"web:dev": "cd src/web && next dev",
+		"web:build": "cd src/web && next build",
+		"web:start": "cd src/web && next start"
 	},
 	"types": "lib/index.d.ts",
 	"version": "1.0.0"
