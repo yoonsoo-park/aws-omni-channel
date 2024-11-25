@@ -1,8 +1,8 @@
 import { Feature, Stack, TargetAccount } from '@ncino/aws-cdk';
-import { AppTempStateMachine } from './resources/state-machine';
-import { Lambda, NodeLambdaFunctions } from './resources/lambda';
+import { AppTempStateMachine } from './state-machine';
+import { Lambda, NodeLambdaFunctions } from '../lambda/lambda';
 import { Policy, PolicyStatement, Effect } from 'aws-cdk-lib/aws-iam';
-import { PythonLambdaFunctions } from './resources/python-lambda';
+import { PythonLambdaFunctions } from '../lambda/python-lambda';
 
 export class ComputeResources {
 	public pythonLambdas?: PythonLambdaFunctions;
@@ -24,11 +24,11 @@ export class ComputeResources {
 
 		const stageName = feature.getContext('stage');
 		const targetAccount = TargetAccount.getInstance();
-		this.stateMachineName = `${feature.getFullName(`V1-AppTemplateStateMachine`)}-${stageName}`;
+		this.stateMachineName = `${feature.getFullName(`V1-OmniChannelStateMachine`)}-${stageName}`;
 		this.stateMachineArn = `arn:aws:states:${targetAccount.getTargetRegion()}:${targetAccount.getTargetAccountId()}:stateMachine:${this.stateMachineName}`;
 
 		//* Declare global environment variables here:
-		environment['APP_TEMP_STATE_MACHINE_ARN'] = this.stateMachineArn;
+		environment['OMNI_CHANNEL_STATE_MACHINE_ARN'] = this.stateMachineArn;
 		environment['VERSION'] = 'V1';
 
 		this.lambdaFunctions = new Lambda({

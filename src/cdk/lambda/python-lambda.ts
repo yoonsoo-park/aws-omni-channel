@@ -98,7 +98,7 @@ export class PythonLambda {
 			codePath: 'src/lambda-functions/trigger_lambda',
 			handler: 'trigger_lambda.lambda_handler',
 			environment: {
-				APP_TEMP_STATE_MACHINE_ARN: this.environment.appTemplateStateMachineArn,
+				OMNI_CHANNEL_STATE_MACHINE_ARN: this.environment.omniChannelStateMachineArn,
 			},
 			kmsKeyArn: this.environment.kmsKeyArn,
 			restApiId: this.environment.restApiId,
@@ -109,7 +109,7 @@ export class PythonLambda {
 			new PolicyStatement({
 				actions: ['states:StartExecution'],
 				effect: Effect.ALLOW,
-				resources: [this.environment.appTemplateStateMachineArn],
+				resources: [this.environment.omniChannelStateMachineArn],
 				sid: 'StartStateMachine',
 			}),
 		);

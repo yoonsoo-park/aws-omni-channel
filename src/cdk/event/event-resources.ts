@@ -2,8 +2,8 @@ import { Feature, NodejsFunction, TargetAccount } from '@ncino/aws-cdk';
 import { Fn } from 'aws-cdk-lib';
 import { Rule } from 'aws-cdk-lib/aws-events';
 import { PolicyStatement, Effect } from 'aws-cdk-lib/aws-iam';
-import { buildResourceARN } from '../lib/utility/aws-utils';
-import { EventBridgeService, IEventService } from './resources/event-service';
+import { buildResourceARN } from '../../shared/utility/aws-utils';
+import { EventBridgeService, IEventService } from './event-service';
 
 /**
  * Represents the EventResources class.
@@ -20,7 +20,7 @@ export class EventResources {
 			stack: feature.baseStack,
 			serviceName: 'states',
 			resourcePrefix: 'stateMachine:',
-			resourceName: `V1-AppTemplateStateMachine`,
+			resourceName: `V1-OmniChannelStateMachine`,
 		});
 
 		//* 1️⃣ ******************************* 1️⃣ *//

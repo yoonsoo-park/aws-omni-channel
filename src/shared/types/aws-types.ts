@@ -1,4 +1,4 @@
-import { StepLambdaInput, Jsonable } from './app-temp-types';
+import { StepLambdaInput, Jsonable } from './omni-channel-types';
 
 export interface ExecutionContext {
 	Id: string;

@@ -9,11 +9,11 @@ logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
     sfn_client = boto3.client('stepfunctions')
-    state_machine_arn = os.getenv("METAMAN_STATE_MACHINE_ARN")
+    state_machine_arn = os.getenv("OMNI_CHANNEL_STATE_MACHINE_ARN")
 
     if not state_machine_arn:
-        logger.error("Environment variable 'METAMAN_STATE_MACHINE_ARN' not set.")
-        return {"error": "Configuration error, Metaman State Machine ARN not found."}
+        logger.error("Environment variable 'OMNI_CHANNEL_STATE_MACHINE_ARN' not set.")
+        return {"error": "Configuration error, OmniChannel State Machine ARN not found."}
 
     payload = json.dumps(event)  # Preparing the payload for the state machine
     print(f"Payload goes into the state machine: {payload}")

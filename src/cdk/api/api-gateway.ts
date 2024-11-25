@@ -9,23 +9,25 @@ import {
 	Stage,
 	IntegrationType,
 	Integration,
+	CognitoUserPoolsAuthorizer,
 } from 'aws-cdk-lib/aws-apigateway';
+import { UserPool } from 'aws-cdk-lib/aws-cognito';
 import { Role, ServicePrincipal, PolicyStatement, Effect, User } from 'aws-cdk-lib/aws-iam';
 import { Aws } from 'aws-cdk-lib';
 
-export class AppTempApiGateway extends ApiGatewayDevops {
-	constructor(stack: Stack) {
+export class OmniChannelApiGateway extends ApiGatewayDevops {
+	constructor(stack: Stack, userPool: UserPool) {
 		super(stack, stack.getFullName('ApiGateway'), {
-			apiGatewayDescription: 'API Gateway for App Template',
-			endpointExportName: `App-Template-API-endpoint-${stack.getContext('suffix')}`,
+			apiGatewayDescription: 'API Gateway for OmniChannel',
+			endpointExportName: `OmniChannel-API-endpoint-${stack.getContext('suffix')}`,
 		});
 
 		// Create IAM Resources
-		const appTemplateRole = new Role(stack, stack.getFullName('role'), {
+		const omniChannelRole = new Role(stack, stack.getFullName('role'), {
 			assumedBy: new ServicePrincipal('apigateway.amazonaws.com'),
 		});
-		const appTemplateUser = new User(stack, stack.getFullName('user'), {
-			userName: `App-Template-user-${stack.getContext('suffix')}`,
+		const omniChannelUser = new User(stack, stack.getFullName('user'), {
+			userName: `OmniChannel-user-${stack.getContext('suffix')}`,
 		});
 
 		const allowInvokeApi = new PolicyStatement({
@@ -41,8 +43,8 @@ export class AppTempApiGateway extends ApiGatewayDevops {
 		});
 
 		// Assign Permissions
-		appTemplateUser.addToPolicy(allowInvokeApi);
-		appTemplateRole.addToPolicy(allowInvokeLambda);
+		omniChannelUser.addToPolicy(allowInvokeApi);
+		omniChannelRole.addToPolicy(allowInvokeLambda);
 
 		// Create Responses
 		const integrationResponses = this.buildIntegrationResponses();
@@ -52,7 +54,7 @@ export class AppTempApiGateway extends ApiGatewayDevops {
 		const triggerResource = this.addResource(this.root, 'trigger');
 
 		// Create Deployment
-		const deployment = this.addDeployment('App-Template API deployment');
+		const deployment = this.addDeployment('OmniChannel API deployment');
 
 		// Create Blue Stage
 		const blueStage: Stage = this.addDeploymentStage(
@@ -60,7 +62,7 @@ export class AppTempApiGateway extends ApiGatewayDevops {
 			'blue',
 			deployment,
 			{
-				TriggerLambda: `AppTemplate-AppTemplateTriggerLambda-${this.stack.getContext('suffix')}-blue`,
+				TriggerLambda: `OmniChannel-OmniChannelTriggerLambda-${this.stack.getContext('suffix')}-blue`,
 			},
 		);
 
@@ -70,7 +72,7 @@ export class AppTempApiGateway extends ApiGatewayDevops {
 			'green',
 			deployment,
 			{
-				TriggerLambda: `AppTemplate-AppTemplateTriggerLambda-${this.stack.getContext('suffix')}-green`,
+				TriggerLambda: `OmniChannel-OmniChannelTriggerLambda-${this.stack.getContext('suffix')}-green`,
 			},
 		);
 
@@ -79,7 +81,7 @@ export class AppTempApiGateway extends ApiGatewayDevops {
 			modelName: 'RequestModel',
 			schema: {
 				schema: JsonSchemaVersion.DRAFT4,
-				title: 'triggerAppTemplate',
+				title: 'triggerOmniChannel',
 				type: JsonSchemaType.OBJECT,
 				properties: {
 					packages: { type: JsonSchemaType.ARRAY },
@@ -104,10 +106,17 @@ export class AppTempApiGateway extends ApiGatewayDevops {
 			uri: `arn:aws:apigateway:${Aws.REGION}:lambda:path/2015-03-31/functions/arn:aws:lambda:${Aws.REGION}:${Aws.ACCOUNT_ID}:function:\${stageVariables.${stageVariableLambdaName}}/invocations`,
 			options: integrationOptions,
 		});
+
+		// Create Cognito Authorizer
+		const authorizer = new CognitoUserPoolsAuthorizer(stack, 'OmniChannelAuthorizer', {
+			cognitoUserPools: [userPool],
+		});
+
 		// Create Method
 		triggerResource.addMethod(RestApiMethodType.POST, lambdaIntegration, {
 			methodResponses,
-			authorizationType: AuthorizationType.IAM,
+			authorizationType: AuthorizationType.COGNITO,
+			authorizer,
 			requestParameters: { 'method.request.path.id': true },
 			requestModels: { 'application/json': triggerModel },
 		});
@@ -120,7 +129,7 @@ export class AppTempApiGateway extends ApiGatewayDevops {
 			const domain = `us-east-1.internal-${targetEnv}.ncino.cloud`;
 			this.createBasePathMappings(
 				this.restApiId,
-				'App-Template',
+				'OmniChannel',
 				blueStage,
 				greenStage,
 				'devops',
@@ -130,8 +139,8 @@ export class AppTempApiGateway extends ApiGatewayDevops {
 		// Create Outputs
 		this.outputApiId(
 			this.restApiId,
-			`App-Template-RestApi-Id`,
-			`App-Template-RestApiId-${this.stack.getContext('suffix')}`,
+			`OmniChannel-RestApi-Id`,
+			`OmniChannel-RestApiId-${this.stack.getContext('suffix')}`,
 		);
 	}
 

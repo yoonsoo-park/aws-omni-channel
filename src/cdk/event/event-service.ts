@@ -4,7 +4,7 @@ import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
 import { Duration } from 'aws-cdk-lib';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { join } from 'node:path';
-import { EventBusInfo } from '../../lib/types/app-temp-types';
+import { EventBusInfo } from '../../shared/types/omni-channel-types';
 
 /**
  * Represents an event service that allows publishing and subscribing to events.

@@ -1,5 +1,5 @@
 import { Feature, StageableStack, StageableStackProps, TargetAccount } from '@ncino/aws-cdk';
-import { EventResources as V1Event } from '../infrastructure/event-resources';
+import { EventResources as V1Event } from './event-resources';
 
 export class EventStack extends StageableStack {
 	constructor(

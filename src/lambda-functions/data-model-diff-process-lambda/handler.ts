@@ -1,7 +1,7 @@
 import { Context } from 'aws-lambda';
 import { ALambdaHandler } from '@ncino/aws-sdk';
-import { ResultData } from '../../lib/types/app-temp-types';
-import { uploadToS3, fetchFromS3 } from '../../lib/utility/s3-utils';
+import { ResultData } from '../../shared/types/omni-channel-types';
+import { uploadToS3, fetchFromS3 } from '../../shared/utility/s3-utils';
 
 export class Handler extends ALambdaHandler {
 	public async main(input: any, context: Context): Promise<any> {

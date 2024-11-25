@@ -8,12 +8,12 @@ import {
 import { Aws, Fn, Tags } from 'aws-cdk-lib';
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
-import { ComputeResources } from '../infrastructure/compute-resource';
-import { PythonLambda } from '../infrastructure/resources/python-lambda';
-import { version } from '../../package.json';
-import { AppTempBucket } from '../infrastructure/resources/bucket';
+import { ComputeResources } from './compute-resource';
+import { PythonLambda } from '../lambda/python-lambda';
+import { version } from '../../../package.json';
+import { AppTempBucket } from '../storage/bucket';
 
-export class AppTempComputeStack extends StageableStack {
+export class OmniChannelComputeStack extends StageableStack {
 	appTemp_lambda: PythonLambda;
 	trigger_lambda: PythonLambda;
 
@@ -45,10 +45,10 @@ export class AppTempComputeStack extends StageableStack {
 		}
 
 		//* 🚀 ******************************** 🚀 *
-		//* Build AppTemplate S3 Bucket.              *
+		//* Build OmniChannel S3 Bucket.              *
 		//* 🚀 ******************************** 🚀 *
 		const appTempBucketName =
-			`AppTemplate-Bucket-${feature.getContext('suffix')}`.toLowerCase();
+			`OmniChannel-Bucket-${feature.getContext('suffix')}`.toLowerCase();
 		const appTempBucket = new AppTempBucket(feature.baseStack, appTempBucketName);
 		environment['BUCKET_NAME'] = appTempBucketName;
 		environment['BUCKET_ARN'] = appTempBucket.bucketArn;
@@ -63,9 +63,9 @@ export class AppTempComputeStack extends StageableStack {
 		// //* 🚀 ******************************** 🚀 *
 		// //* Build Python Lambdas.                  *
 		// //* 🚀 ******************************** 🚀 *
-		// const stateMachineName = `${feature.getFullName(`V1-AppTemplateStateMachine`)}-${stage}`;
-		// console.log("AppTemplate State Machine Name:", stateMachineName);
-		// const appTemplateStateMachineArn = `arn:aws:states:${this.targetAccount.getTargetRegion()}:${this.targetAccount.getTargetAccountId()}:stateMachine:${stateMachineName}`;
+		// const stateMachineName = `${feature.getFullName(`V1-OmniChannelStateMachine`)}-${stage}`;
+		// console.log("OmniChannel State Machine Name:", stateMachineName);
+		// const omniChannelStateMachineArn = `arn:aws:states:${this.targetAccount.getTargetRegion()}:${this.targetAccount.getTargetAccountId()}:stateMachine:${stateMachineName}`;
 
 		// const pythonLambdas = new PythonLambda({
 		// 	stack: this,
@@ -75,7 +75,7 @@ export class AppTempComputeStack extends StageableStack {
 		// 		sf_api_version,
 		// 		kmsKeyArn,
 		// 		restApiId,
-		// 		appTemplateStateMachineArn,
+		// 		omniChannelStateMachineArn,
 		// 	},
 		// });
 
