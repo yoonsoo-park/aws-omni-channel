@@ -1,0 +1,20 @@
+{
+	"app": "npx ts-node bin/app.ts",
+	"context": {
+		"appName": "AppTemplate",
+		"repo": "ncino-app-template",
+		"ecrImage": "ci-private-ubuntu",
+		"stage": "blue",
+		"suffix": "myAppSuffix",
+		"enableBilling": false,
+		"devopsLibLayer": "arn:aws:lambda:us-east-1:726849041453:layer:devops-libs-devops:20",
+		"gitLayer": "arn:aws:lambda:us-east-1:553035198032:layer:git-lambda2:8",
+		"tags": {
+			"uai": "UAI0119",
+			"owner": "pdedevops@ncino.com",
+			"service": "AppTemplate",
+			"repo": "ncino-app-template"
+		},
+		"sf_api_version": "60.0"
+	}
+}

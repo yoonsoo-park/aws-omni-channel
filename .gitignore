@@ -1,0 +1,28 @@
+# Python
+build/
+*.pyc
+*.egg-info/
+.coverage
+
+# Node
+node_modules
+
+# Sfdx
+.sfdx
+scratch_org_display.json
+
+# AWS CDK files
+**/cdk.out
+**/.cdk.staging
+**/cdk.context.json
+
+# Typescript
+**/*.js
+!.eslintrc.js
+**/*.d.ts
+dist/
+
+outputfile.xlsx
+!setup.js
+.DS_Store
+*.csv

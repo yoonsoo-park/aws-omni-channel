@@ -1,0 +1,93 @@
+version: 0.2
+env:
+  shell: bash
+  variables:
+    GIT_COMMITTER_EMAIL: "pdedevops@ncino.com"
+    GIT_COMMITTER_NAME: "ci-ncino"
+    SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+    DEPLOY_ROLE_NAME: "DevOpsBuildRole"
+    PLM_IS_SANDBOX: false
+  exported-variables:
+    - GIT_BRANCH
+    - COMMIT_SHA1
+    - DEPLOYMENT_STAGE
+    - CODEBUILD_WEBHOOK_HEAD_REF
+  secrets-manager:
+    CI_NCINO_SSH_PRIVATE_SIGNING_KEY: DevOpsBuildSecrets:CI_NCINO_SSH_PRIVATE_SIGNING_KEY
+    CI_NCINO_SSH_PUBLIC_SIGNING_KEY: DevOpsBuildSecrets:CI_NCINO_SSH_PUBLIC_SIGNING_KEY
+    ACCOUNTS_JSON: DevOpsTargetAccounts
+    GITHUB_TOKEN: DevOpsGitHubAccessToken:token
+
+phases:
+  install:
+    commands:
+      - n $(cat .nvmrc)
+      - source $DEVOPS_SCRIPTS_PATH/git_setup.sh
+      - echo " 📦 INSTALLING PACKAGES 📦 "
+      - $DEVOPS_SCRIPTS_PATH/npm_auth.sh
+      - npm install -g aws-cdk
+      - npm ci
+      - pipenv install --dev
+      - if [[ -f /scripts/npm/preinstall.sh ]]; then npm run npm:preinstall; fi;
+  pre_build:
+    commands:
+      - echo " 🚨 TARGET ENV = $TARGET_ENV 🚨 "
+      - |
+        echo " ⚙️ CONFIGURING DEPLOY SETTINGS ⚙️ "
+        TARGET_ENV_ACCOUNT_ID=$(echo $ACCOUNTS_JSON | jq -r ".\"$TARGET_ENV\""); export TARGET_ENV_ACCOUNT_ID
+        TARGET_ENV_ROLE_ARN=arn:aws:iam::$TARGET_ENV_ACCOUNT_ID:role/$DEPLOY_ROLE_NAME
+        source ./bin/assume_role.sh $TARGET_ENV_ROLE_ARN
+      - aws configure set region $AWS_REGION
+      - |
+        echo "Target env role - $TARGET_ENV_ROLE_ARN"
+        aws sts get-caller-identity --output json
+  build:
+    commands:
+      - |
+        API_EXISTS=$(aws cloudformation list-stacks \
+          --stack-status-filter CREATE_COMPLETE ROLLBACK_COMPLETE UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE \
+          --query 'StackSummaries[?StackName==`AppTemplate-ApiStack-'${TARGET_ENV}'`].StackName' \
+          --output text)
+        echo " ❓ API EXISTS = ${API_EXISTS} ❓ "
+      - |
+        if [ -z $API_EXISTS ]; then
+          ./bin/first_time_deployment.sh
+        fi
+      - if [ $TARGET_ENV == "tooling-prod" ]; then export DOMAIN_STAGE="prod"; else export DOMAIN_STAGE="qa"; fi
+      - |
+        currentStage=$(aws apigateway get-base-path-mapping \
+          --domain-name ${AWS_REGION}.internal-${DOMAIN_STAGE}.ncino.cloud \
+          --base-path App-Template-${TARGET_ENV} \
+          --query 'stage' --output text)
+        export DEPLOYMENT_STAGE=$([ "$currentStage" == "blue" ] && echo "green" || echo "blue")
+        deploy_emoji=$([ "$DEPLOYMENT_STAGE" == "blue" ] && echo "🔵" || echo "🟢")
+        echo " ${deploy_emoji} DEPLOYMENT STAGE = ${DEPLOYMENT_STAGE} ${deploy_emoji} "
+      - |
+        echo " 🪂 DEPLOYING STACK 🪂 "
+        cdk deploy AppTemplate-ComputeStack-${TARGET_ENV}-${DEPLOYMENT_STAGE} \
+          -c suffix=${TARGET_ENV} \
+          -c stage=${DEPLOYMENT_STAGE} \
+          --require-approval never
+      - |
+        echo " 🎬 Deploying API to Inactive Stage 🎬 "
+        command="aws apigateway get-rest-apis --query 'items[?name==\`AppTemplate-ApiGateway-$TARGET_ENV\`].id' --output text --region us-east-1"
+        export REST_API_ID=$(eval $command)
+        aws apigateway create-deployment \
+          --rest-api-id $REST_API_ID \
+          --stage-name ${DEPLOYMENT_STAGE} \
+          --description "Deployed on $(TZ=America/New_York date) to the ${DEPLOYMENT_STAGE} stage"
+  post_build:
+    commands:
+      - |
+        if [[ "$CODEBUILD_BUILD_SUCCEEDING" == "0" ]]; then
+          echo " 🤦‍ THE BUILD FAILED 🤦‍ "
+          exit 1
+        else
+          cat $CODEBUILD_SRC_DIR/deploy/resources/app-template.txt
+        fi
+artifacts:
+  files:
+    - pytest.log
+    - "/tmp/testResults/python/test_results.xml"
+  name: metadata-diff-artifacts
+  discard-paths: yes

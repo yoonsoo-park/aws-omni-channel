@@ -1,0 +1,114 @@
+version: 0.2
+env:
+  shell: bash
+  variables:
+    GIT_COMMITTER_EMAIL: "template@ncino.com"
+    GIT_COMMITTER_NAME: "ci-ncino"
+    SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+    DEPLOY_ROLE_NAME: "DevOpsBuildRole"
+    PLM_ACCESS_TOKEN: "test"
+    PLM_INSTANCE_URL: "test"
+    PLM_IS_SANDBOX: true
+    SECRET_ID: "DevOpsGitHubAccessToken"
+  exported-variables:
+    - GIT_BRANCH
+    - COMMIT_SHA1
+    - REPO_NAME
+    - SFDX_CLI_VERSION
+    - SFDX_NODE_VERSION
+    - SFDX_RUNNING_ARCHITECTURE
+    - NODE_VERSION
+    - NPM_VERSION
+    - CODEBUILD_WEBHOOK_HEAD_REF
+  secrets-manager:
+    CI_NCINO_SSH_PRIVATE_SIGNING_KEY: DevOpsBuildSecrets:CI_NCINO_SSH_PRIVATE_SIGNING_KEY
+    CI_NCINO_SSH_PUBLIC_SIGNING_KEY: DevOpsBuildSecrets:CI_NCINO_SSH_PUBLIC_SIGNING_KEY
+    ACCOUNTS_JSON: DevOpsTargetAccounts
+    GITHUB_TOKEN: DevOpsGitHubAccessToken:token
+
+phases:
+  install:
+    commands:
+      - n $(cat .nvmrc)
+      - source $DEVOPS_SCRIPTS_PATH/git_setup.sh
+      - echo " 📦 INSTALLING PACKAGES 📦 "
+      - $DEVOPS_SCRIPTS_PATH/npm_auth.sh
+      - $DEVOPS_SCRIPTS_PATH/npm.sh install -g aws-cdk
+      - $DEVOPS_SCRIPTS_PATH/npm.sh ci
+      - pipenv install --dev
+      - if [[ -f /scripts/npm/preinstall.sh ]]; then $DEVOPS_SCRIPTS_PATH/npm.sh run npm:preinstall; fi;
+  pre_build:
+    commands:
+      - echo " 📝 CONFIGURING ENVIRONMENT DETAILS 📝 "
+      - |
+        export COMMIT_SHA1="$CODEBUILD_RESOLVED_SOURCE_VERSION"
+        echo " 🚨 COMMIT_SHA1 = $COMMIT_SHA1 🚨 "
+      - |
+        export GIT_BRANCH="$(git rev-parse HEAD | xargs git name-rev | cut -d' ' -f2)"
+        echo " 🚨 GIT_BRANCH = $GIT_BRANCH 🚨 "
+      - echo " 🚨 TARGET ENV = $TARGET_ENV 🚨 "
+      - |
+        if [ -z "$APP_SUFFIX" ]; then
+          if [ "$TARGET_ENV" = "devopsci" ]; then
+            export APP_SUFFIX="CI${TARGET_ENV}${CODEBUILD_BUILD_NUMBER}"
+          else
+            export APP_SUFFIX=${TARGET_ENV}
+          fi
+        fi
+        echo " 🚨 APP SUFFIX = $APP_SUFFIX 🚨 "
+      - echo " ⚙️ CONFIGURING DEPLOY SETTINGS ⚙️ "
+      - |
+        echo " ⚙️ CONFIGURING DEPLOY SETTINGS ⚙️ "
+        TARGET_ENV_ACCOUNT_ID=$(echo $ACCOUNTS_JSON | jq -r ".\"$TARGET_ENV\""); export TARGET_ENV_ACCOUNT_ID
+        TARGET_ENV_ROLE_ARN=arn:aws:iam::$TARGET_ENV_ACCOUNT_ID:role/$DEPLOY_ROLE_NAME
+        source ./bin/assume_role.sh $TARGET_ENV_ROLE_ARN
+      - aws configure set region us-east-1
+      - |
+        echo "Target env role - $TARGET_ENV_ROLE_ARN"
+        aws sts get-caller-identity --output json
+  build:
+    commands:
+      - echo " 🏢 RUNNING INFRASTRUCTURE TESTS 🏢 "
+      - $DEVOPS_SCRIPTS_PATH/npm.sh run test
+      - echo " 🧪 RUNNING UNIT TESTS 🧪 "
+      - |
+        if [[ "$GIT_BRANCH" != "release" ]]; then
+          export DEPLOYMENT_STAGE=blue
+          echo " 🔵 DEPLOYMENT STAGE = ${DEPLOYMENT_STAGE} 🔵 "
+          echo " 🪂 DEPLOYING STACK 🪂 "
+          cdk deploy AppTemplate-ComputeStack-${APP_SUFFIX}-${DEPLOYMENT_STAGE} -c suffix=${APP_SUFFIX} -c stage=${DEPLOYMENT_STAGE} --require-approval never
+        fi
+    finally:
+      - |
+        if [[ "$GIT_BRANCH" != "release" ]]; then
+          echo " 💣💥 DESTROYING STACKS 💥💣 "
+          cdk destroy -f AppTemplate-ComputeStack-${APP_SUFFIX}-${DEPLOYMENT_STAGE} -c suffix=${APP_SUFFIX} -c stage=${DEPLOYMENT_STAGE}
+          cdk destroy -f AppTemplate-ApiStack-${APP_SUFFIX} -c suffix=${APP_SUFFIX}
+        else
+          skip_commit=$(git log --format=%B -n 1 "$CODEBUILD_SOURCE_VERSION" | grep "^chore(release):.*[skip ci].*")
+          # If the regex in grep doesn't find anything then we should build a release and artifact
+          if [ -z "$skip_commit" ]; then
+            mkdir tmp/ && cd tmp
+            git clone https://$GITHUB_TOKEN@github.com/yoonsoo-park/aws-app-template.git && cd aws-app-template
+            git checkout -f "$CODEBUILD_RESOLVED_SOURCE_VERSION"
+            npm ci --unsafe-perm
+            export NPM_TOKEN=$GITHUB_TOKEN
+            npm run semantic-release --unsafe-perm
+          fi
+        fi
+  post_build:
+    commands:
+      - |
+        if [[ "$CODEBUILD_BUILD_SUCCEEDING" == "0" ]]; then
+          echo " 🤦‍ THE BUILD FAILED 🤦‍ "
+          exit 1
+        else
+          cat $CODEBUILD_SRC_DIR/deploy/resources/metaman.txt
+        fi
+artifacts:
+  files:
+    - pytest.log
+    - integration.log
+    - "/tmp/testResults/python/test_results.xml"
+  name: metadata-diff
+  discard-paths: yes
