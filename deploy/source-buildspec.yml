@@ -46,7 +46,7 @@ phases:
       - |
         API_EXISTS=$(aws cloudformation list-stacks \
           --stack-status-filter CREATE_COMPLETE ROLLBACK_COMPLETE UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE \
-          --query 'StackSummaries[?StackName==`AppTemplate-ApiStack-'${TARGET_ENV}'`].StackName' \
+          --query 'StackSummaries[?StackName==`OmniChannel-ApiStack-'${TARGET_ENV}'`].StackName' \
           --output text)
         echo " ❓ API EXISTS = ${API_EXISTS} ❓ "
       - |
@@ -57,20 +57,20 @@ phases:
       - |
         currentStage=$(aws apigateway get-base-path-mapping \
           --domain-name ${AWS_REGION}.internal-${DOMAIN_STAGE}.ncino.cloud \
-          --base-path App-Template-${TARGET_ENV} \
+          --base-path OmniChannel-${TARGET_ENV} \
           --query 'stage' --output text)
         export DEPLOYMENT_STAGE=$([ "$currentStage" == "blue" ] && echo "green" || echo "blue")
         deploy_emoji=$([ "$DEPLOYMENT_STAGE" == "blue" ] && echo "🔵" || echo "🟢")
         echo " ${deploy_emoji} DEPLOYMENT STAGE = ${DEPLOYMENT_STAGE} ${deploy_emoji} "
       - |
         echo " 🪂 DEPLOYING STACK 🪂 "
-        cdk deploy AppTemplate-ComputeStack-${TARGET_ENV}-${DEPLOYMENT_STAGE} \
+        cdk deploy OmniChannel-ComputeStack-${TARGET_ENV}-${DEPLOYMENT_STAGE} \
           -c suffix=${TARGET_ENV} \
           -c stage=${DEPLOYMENT_STAGE} \
           --require-approval never
       - |
         echo " 🎬 Deploying API to Inactive Stage 🎬 "
-        command="aws apigateway get-rest-apis --query 'items[?name==\`AppTemplate-ApiGateway-$TARGET_ENV\`].id' --output text --region us-east-1"
+        command="aws apigateway get-rest-apis --query 'items[?name==\`OmniChannel-ApiGateway-$TARGET_ENV\`].id' --output text --region us-east-1"
         export REST_API_ID=$(eval $command)
         aws apigateway create-deployment \
           --rest-api-id $REST_API_ID \
@@ -83,7 +83,7 @@ phases:
           echo " 🤦‍ THE BUILD FAILED 🤦‍ "
           exit 1
         else
-          cat $CODEBUILD_SRC_DIR/deploy/resources/app-template.txt
+          cat $CODEBUILD_SRC_DIR/deploy/resources/omni-channel.txt
         fi
 artifacts:
   files:

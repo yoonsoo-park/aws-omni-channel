@@ -76,20 +76,20 @@ phases:
           export DEPLOYMENT_STAGE=blue
           echo " 🔵 DEPLOYMENT STAGE = ${DEPLOYMENT_STAGE} 🔵 "
           echo " 🪂 DEPLOYING STACK 🪂 "
-          cdk deploy AppTemplate-ComputeStack-${APP_SUFFIX}-${DEPLOYMENT_STAGE} -c suffix=${APP_SUFFIX} -c stage=${DEPLOYMENT_STAGE} --require-approval never
+          cdk deploy OmniChannel-ComputeStack-${APP_SUFFIX}-${DEPLOYMENT_STAGE} -c suffix=${APP_SUFFIX} -c stage=${DEPLOYMENT_STAGE} --require-approval never
         fi
     finally:
       - |
         if [[ "$GIT_BRANCH" != "release" ]]; then
           echo " 💣💥 DESTROYING STACKS 💥💣 "
-          cdk destroy -f AppTemplate-ComputeStack-${APP_SUFFIX}-${DEPLOYMENT_STAGE} -c suffix=${APP_SUFFIX} -c stage=${DEPLOYMENT_STAGE}
-          cdk destroy -f AppTemplate-ApiStack-${APP_SUFFIX} -c suffix=${APP_SUFFIX}
+          cdk destroy -f OmniChannel-ComputeStack-${APP_SUFFIX}-${DEPLOYMENT_STAGE} -c suffix=${APP_SUFFIX} -c stage=${DEPLOYMENT_STAGE}
+          cdk destroy -f OmniChannel-ApiStack-${APP_SUFFIX} -c suffix=${APP_SUFFIX}
         else
           skip_commit=$(git log --format=%B -n 1 "$CODEBUILD_SOURCE_VERSION" | grep "^chore(release):.*[skip ci].*")
           # If the regex in grep doesn't find anything then we should build a release and artifact
           if [ -z "$skip_commit" ]; then
             mkdir tmp/ && cd tmp
-            git clone https://$GITHUB_TOKEN@github.com/yoonsoo-park/aws-app-template.git && cd aws-app-template
+            git clone https://$GITHUB_TOKEN@github.com/yoonsoo-park/aws-omni-channel.git && cd aws-omni-channel
             git checkout -f "$CODEBUILD_RESOLVED_SOURCE_VERSION"
             npm ci --unsafe-perm
             export NPM_TOKEN=$GITHUB_TOKEN

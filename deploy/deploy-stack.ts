@@ -117,7 +117,7 @@ export class DeployStack extends ncinoCdk.Stack {
 					userParameters: {
 						env: 'tooling-qa',
 						domain: 'us-east-1.internal-qa.ncino.cloud',
-						basePath: 'app-template-tooling-qa',
+						basePath: 'omni-channel-tooling-qa',
 						deploymentStage: toolingQaCodebuildAction.variable('DEPLOYMENT_STAGE'),
 					},
 					runOrder: 2,
@@ -170,7 +170,7 @@ export class DeployStack extends ncinoCdk.Stack {
 					userParameters: {
 						env: 'tooling-prod',
 						domain: 'us-east-1.internal-prod.ncino.cloud',
-						basePath: 'app-template-tooling-prod',
+						basePath: 'omni-channel-tooling-prod',
 						deploymentStage: toolingProdCodebuildAction.variable('DEPLOYMENT_STAGE'),
 					},
 					runOrder: 3,

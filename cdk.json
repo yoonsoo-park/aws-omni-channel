@@ -1,8 +1,8 @@
 {
 	"app": "npx ts-node bin/app.ts",
 	"context": {
-		"appName": "AppTemplate",
-		"repo": "ncino-app-template",
+		"appName": "OmniChannel",
+		"repo": "ncino-omni-channel",
 		"ecrImage": "ci-private-ubuntu",
 		"stage": "blue",
 		"suffix": "myAppSuffix",
@@ -11,9 +11,9 @@
 		"gitLayer": "arn:aws:lambda:us-east-1:553035198032:layer:git-lambda2:8",
 		"tags": {
 			"uai": "UAI0119",
-			"owner": "pdedevops@ncino.com",
-			"service": "AppTemplate",
-			"repo": "ncino-app-template"
+			"owner": "yoonsoo.park@ncino.com",
+			"service": "OmniChannel",
+			"repo": "ncino-omni-channel"
 		},
 		"sf_api_version": "60.0"
 	}

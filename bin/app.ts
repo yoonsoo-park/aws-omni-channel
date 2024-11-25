@@ -1,19 +1,19 @@
 import { ApiStageType, Feature, StageableStackProps, Utility } from '@ncino/aws-cdk';
-import { AppTempApiStack } from '../src/stacks/api-stack';
 import { DeployStack } from '../deploy/deploy-stack';
-import { AppTempComputeStack } from '../src/stacks/compute-stack';
-import { EventStack } from '../src/stacks/event-stack';
+import { OmniChannelApiStack } from '../src/cdk/api/api-stack';
+import { EventStack } from '../src/cdk/event/event-stack';
+import { OmniChannelComputeStack } from '../src/cdk/compute/compute-stack';
 
 const deployAccount = process.env.CDK_DEPLOY_ACCOUNT || process.env.CDK_DEFAULT_ACCOUNT;
 const deployRegion = process.env.CDK_DEPLOY_REGION || process.env.CDK_DEFAULT_REGION;
 
 const feature = new Feature({
-	name: 'AppTemplate',
+	name: 'OmniChannel',
 	description: '',
 });
 const stageName = feature.getContext('stage') || ApiStageType.BLUE;
 const stackProps: StageableStackProps = {
-	description: 'Required. Contains compute resources for AppTemplate.',
+	description: 'Required. Contains compute resources for OmniChannel.',
 	env: { account: process.env.AWS_ACCOUNT, region: process.env.REGION },
 	stageName,
 };
@@ -22,10 +22,10 @@ if (Utility.isDevopsAccount()) {
 	new DeployStack(feature);
 } else {
 	console.log('🛠  API Stack');
-	const apiStack: AppTempApiStack = new AppTempApiStack(feature, stackProps);
+	const apiStack: OmniChannelApiStack = new OmniChannelApiStack(feature, stackProps);
 
 	console.log('🛠  Compute Stack');
-	new AppTempComputeStack(
+	const computeStack = new OmniChannelComputeStack(
 		feature,
 		apiStack.kmsKeyArn,
 		apiStack.restApiId,
@@ -33,6 +33,7 @@ if (Utility.isDevopsAccount()) {
 		stackProps,
 		{},
 	);
+	computeStack.addDependency(apiStack);
 
 	console.log('🛠  Event Stack');
 	const eventStack = new EventStack(
