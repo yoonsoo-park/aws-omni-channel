@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { Auth, Hub } from 'aws-amplify';
 import { CognitoUser } from '@aws-amplify/auth';
 import { useAmplifyConfigured } from '@/components/AmplifyConfigProvider';
+// import { CognitoHostedUIIdentityProvider } from '@aws-amplify/auth';
 
 interface AuthContextType {
 	user: CognitoUser | null;
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		});
 	}
 
+	//todo: pass { provider: CognitoHostedUIIdentityProvider.Google } to test Google SSO.
 	async function signIn() {
 		await Auth.federatedSignIn();
 	}

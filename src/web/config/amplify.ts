@@ -20,6 +20,7 @@ export function configureAmplify() {
 				redirectSignIn: process.env.NEXT_PUBLIC_REDIRECT_SIGN_IN,
 				redirectSignOut: process.env.NEXT_PUBLIC_REDIRECT_SIGN_OUT,
 				responseType: 'code',
+				provider: process.env.NEXT_PUBLIC_COGNITO_SSO_PROVIDER,
 			},
 			cookieStorage: {
 				domain: process.env.NEXT_PUBLIC_COOKIE_STORAGE_DOMAIN,
