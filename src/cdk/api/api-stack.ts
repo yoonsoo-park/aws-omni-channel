@@ -25,6 +25,7 @@ export class OmniChannelApiStack extends Stack {
 		this.cognitoAuth = new CognitoAuth(this, 'OmniChannel', {
 			domainPrefix: `omnichannel-${this.getContext('suffix')}`,
 			// SSO configuration can be added here when available
+			ssoProviderName: 'Google',
 		});
 
 		// Create KmsKey
