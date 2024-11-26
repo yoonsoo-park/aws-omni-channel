@@ -26,3 +26,6 @@ outputfile.xlsx
 !setup.js
 .DS_Store
 *.csv
+
+# Next.js
+.next/
