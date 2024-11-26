@@ -19,7 +19,7 @@ module.exports = {
 		'prettier/prettier': ['error', { useTabs: true }],
 		'object-shorthand': ['error', 'properties'],
 		'unused-imports/no-unused-imports-ts': 2,
-		indent: ['error', 'tab'],
-		'@typescript-eslint/indent': ['error', 'tab'],
+		indent: ['error', 'tab', { SwitchCase: 1 }],
+		'@typescript-eslint/indent': ['error', 'tab', { SwitchCase: 1 }],
 	},
 };
