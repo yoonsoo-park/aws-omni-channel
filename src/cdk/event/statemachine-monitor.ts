@@ -6,12 +6,12 @@ import { buildResourceARN } from '../../shared/utility/aws-utils';
 import { EventBridgeService, IEventService } from './event-service';
 
 /**
- * Represents the EventResources class.
+ * Represents the StateMachineMonitor class.
  * This class is responsible for defining event resources and configuring event handling.
  */
-export class EventResources {
+export class StateMachineMonitor {
 	/**
-	 * Creates an instance of EventResources.
+	 * Creates an instance of StateMachineMonitor.
 	 * @param feature - The feature object.
 	 * @param targetAccount - The target account object.
 	 */

@@ -3,6 +3,7 @@ import { DeployStack } from '../deploy/deploy-stack';
 import { OmniChannelApiStack } from '../src/cdk/api/api-stack';
 import { EventStack } from '../src/cdk/event/event-stack';
 import { OmniChannelComputeStack } from '../src/cdk/compute/compute-stack';
+import { EventRouterStack } from '../src/cdk/event/event-router-stack';
 
 const deployAccount = process.env.CDK_DEPLOY_ACCOUNT || process.env.CDK_DEFAULT_ACCOUNT;
 const deployRegion = process.env.CDK_DEPLOY_REGION || process.env.CDK_DEFAULT_REGION;
@@ -35,22 +36,34 @@ if (Utility.isDevopsAccount()) {
 	);
 	computeStack.addDependency(apiStack);
 
-	console.log('🛠  Event Stack');
-	const eventStack = new EventStack(
+	console.log('🛠  Event Stacks');
+
+	// State Machine Monitor Stack
+	const eventStack = new EventStack(feature, `${feature.getFullName('EventStack')}`, {
+		description: 'Required. Contains EventBridge resources for State Machine events.',
+		env: {
+			account: deployAccount,
+			region: deployRegion,
+		},
+		stageName,
+	});
+	feature.setStack('eventStack', eventStack);
+	feature.iamStack.addDependency(eventStack);
+
+	// Event Router Stack
+	const eventRouterStack = new EventRouterStack(
 		feature,
-		`${feature.getFullName('EventStack')}`,
+		`${feature.getFullName('EventRouterStack')}`,
 		{
-			description: 'Required. Contains EventBridge resources for State Provisioning.',
+			description: 'Contains event routing and processing resources',
 			env: {
 				account: deployAccount,
 				region: deployRegion,
 			},
 			stageName,
 		},
-		{},
 	);
-	feature.setStack('eventStack', eventStack);
-	feature.iamStack.addDependency(eventStack);
+	feature.setStack('eventRouterStack', eventRouterStack);
 }
 
 feature.synth();
