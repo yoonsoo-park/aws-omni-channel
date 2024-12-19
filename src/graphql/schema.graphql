@@ -1,0 +1,75 @@
+type UserContext {
+    userId: ID!
+    basicInfo: UserBasicInfo!
+    productAccess: [ProductAccess!]!
+    sessionInfo: SessionInfo!
+    lastUpdated: AWSTimestamp!
+}
+
+type UserBasicInfo {
+    email: String!
+    firstName: String!
+    lastName: String!
+    organization: String!
+}
+
+type ProductAccess {
+    productId: String!
+    hasAccess: Boolean!
+    grantedAt: AWSTimestamp!
+    lastVerified: AWSTimestamp!
+    accessPattern: String!
+}
+
+type SessionInfo {
+    startedAt: AWSTimestamp!
+    expiresAt: AWSTimestamp!
+    lastActivity: AWSTimestamp!
+}
+
+type Query {
+    getUserContext(userId: ID!): UserContext
+    getProductAccess(userId: ID!, productId: String!): ProductAccess
+}
+
+type Mutation {
+    updateUserContext(userId: ID!, context: UserContextInput!): UserContext
+    invalidateProductAccess(userId: ID!, productId: String!): ProductAccess
+}
+
+input UserContextInput {
+    basicInfo: UserBasicInfoInput!
+    productAccess: [ProductAccessInput!]!
+    sessionInfo: SessionInfoInput!
+}
+
+input UserBasicInfoInput {
+    email: String!
+    firstName: String!
+    lastName: String!
+    organization: String!
+}
+
+input ProductAccessInput {
+    productId: String!
+    hasAccess: Boolean!
+    accessPattern: String!
+}
+
+input SessionInfoInput {
+    startedAt: AWSTimestamp!
+    expiresAt: AWSTimestamp!
+}
+
+type Subscription {
+    onUserContextChanged(userId: ID!): UserContext
+        @aws_subscribe(mutations: ["updateUserContext"])
+    onProductAccessChanged(userId: ID!): ProductAccess
+        @aws_subscribe(mutations: ["invalidateProductAccess"])
+}
+
+schema {
+    query: Query
+    mutation: Mutation
+    subscription: Subscription
+} 

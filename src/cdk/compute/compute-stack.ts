@@ -5,17 +5,24 @@ import {
 	StageableStackProps,
 	TargetAccount,
 } from '@ncino/aws-cdk';
-import { Aws, Fn, Tags } from 'aws-cdk-lib';
+import { Aws, Fn, Tags, RemovalPolicy } from 'aws-cdk-lib';
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { ComputeResources } from './compute-resource';
 import { PythonLambda } from '../lambda/python-lambda';
 import { version } from '../../../package.json';
 import { AppTempBucket } from '../storage/bucket';
+import { Table, AttributeType, BillingMode } from 'aws-cdk-lib/aws-dynamodb';
+import * as appsync from 'aws-cdk-lib/aws-appsync';
+import { StateMachine } from 'aws-cdk-lib/aws-stepfunctions';
+import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 
 export class OmniChannelComputeStack extends StageableStack {
 	appTemp_lambda: PythonLambda;
 	trigger_lambda: PythonLambda;
+	userContextTable: Table;
+	dbsApi: appsync.GraphqlApi;
+	userContextStateMachine: StateMachine;
 
 	constructor(
 		feature: Feature,
@@ -60,24 +67,47 @@ export class OmniChannelComputeStack extends StageableStack {
 			}),
 		);
 
-		// //* 🚀 ******************************** 🚀 *
-		// //* Build Python Lambdas.                  *
-		// //* 🚀 ******************************** 🚀 *
-		// const stateMachineName = `${feature.getFullName(`V1-OmniChannelStateMachine`)}-${stage}`;
-		// console.log("OmniChannel State Machine Name:", stateMachineName);
-		// const omniChannelStateMachineArn = `arn:aws:states:${this.targetAccount.getTargetRegion()}:${this.targetAccount.getTargetAccountId()}:stateMachine:${stateMachineName}`;
+		//* 🏗️ ******************************** 🏗️ *//
+		//* Build DBS Components                    *//
+		//* 🏗️ ******************************** 🏗️ *//
 
-		// const pythonLambdas = new PythonLambda({
-		// 	stack: this,
-		// 	environment: {
-		// 		...environment,
-		// 		githubToken,
-		// 		sf_api_version,
-		// 		kmsKeyArn,
-		// 		restApiId,
-		// 		omniChannelStateMachineArn,
-		// 	},
-		// });
+		// Create DynamoDB table for user context
+		this.userContextTable = new Table(this, 'UserContextTable', {
+			tableName: `${feature.getFullName('UserContext')}-${stage}`,
+			partitionKey: { name: 'userId', type: AttributeType.STRING },
+			sortKey: { name: 'contextType', type: AttributeType.STRING },
+			timeToLiveAttribute: 'ttl',
+			billingMode: BillingMode.PAY_PER_REQUEST,
+			removalPolicy: RemovalPolicy.RETAIN,
+		});
+
+		// Create AppSync API for real-time updates
+		this.dbsApi = new appsync.GraphqlApi(this, 'DataBridgeAPI', {
+			name: `${feature.getFullName('DataBridge')}-${stage}`,
+			schema: appsync.SchemaFile.fromAsset('src/graphql/schema.graphql'),
+			authorizationConfig: {
+				defaultAuthorization: {
+					authorizationType: appsync.AuthorizationType.IAM,
+				},
+			},
+			logConfig: {
+				fieldLogLevel: appsync.FieldLogLevel.ERROR,
+				excludeVerboseContent: true,
+			},
+			xrayEnabled: true,
+		});
+
+		// Create State Machine for user context management
+		const logGroup = new LogGroup(this, 'UserContextStateMachineLogs', {
+			logGroupName: `/aws/vendedlogs/states/${feature.getFullName('UserContextStateMachine')}-${stage}`,
+			retention: RetentionDays.ONE_MONTH,
+			removalPolicy: RemovalPolicy.DESTROY,
+		});
+
+		// Add these resources to environment for lambda functions
+		environment['USER_CONTEXT_TABLE'] = this.userContextTable.tableName;
+		environment['DBS_API_URL'] = this.dbsApi.graphqlUrl;
+		environment['DBS_API_ID'] = this.dbsApi.apiId;
 
 		//* 🏗️ ******************************** 🏗️ *//
 		//* Build state machine. node lambdas.    *//
