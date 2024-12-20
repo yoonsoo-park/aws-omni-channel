@@ -1,7 +1,7 @@
 import { Stack } from '@ncino/aws-cdk';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
-import { PythonLambdaFunctions } from '../lambda/python-lambda';
-import { NodeLambdaFunctions } from '../lambda/lambda';
+import { PythonLambdaFunctions } from '../../../lambda/python-lambda';
+import { NodeLambdaFunctions } from '../../../lambda/node-lambda';
 
 export class AppTempStateMachine {
 	public static config = {
