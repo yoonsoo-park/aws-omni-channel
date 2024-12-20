@@ -12,6 +12,7 @@
 		"@types/node": "^22.1.0",
 		"aws-appsync": "^4.1.10",
 		"aws-cdk-lib": "^2.173.2",
+		"aws-jwt-verify": "^4.0.1",
 		"aws-lambda": "^1.0.7",
 		"aws-sdk": "^2.1613.0",
 		"datadog-lambda-js": "^8.108.0",
@@ -19,6 +20,8 @@
 	},
 	"description": "Tool for salesforce metadata analysis.",
 	"devDependencies": {
+		"@aws-sdk/signature-v4": "^3.100.0",
+		"@aws-sdk/protocol-http": "^3.100.0",
 		"@semantic-release/changelog": "^6.0.3",
 		"@semantic-release/exec": "^6.0.3",
 		"@semantic-release/git": "^10.0.1",
@@ -28,6 +31,7 @@
 		"@types/aws-lambda": "^8.10.137",
 		"@types/jest": "^29.5.12",
 		"@types/jsforce": "^1.11.5",
+		"@types/node-fetch": "^2.6.11",
 		"@typescript-eslint/eslint-plugin": "^7.18.0",
 		"@typescript-eslint/parser": "^7.18.0",
 		"esbuild": "^0.23.0",
@@ -51,12 +55,8 @@
 	},
 	"jest": {
 		"preset": "ts-jest/presets/js-with-babel",
-		"roots": [
-			"<rootDir>/deploy/test"
-		],
-		"testMatch": [
-			"**/*.test.ts"
-		],
+		"roots": ["<rootDir>/deploy/test"],
+		"testMatch": ["**/*.test.ts"],
 		"transform": {
 			"^.+\\.tsx?$": [
 				"ts-jest",
@@ -65,9 +65,7 @@
 				}
 			]
 		},
-		"transformIgnorePatterns": [
-			"node_modules/"
-		]
+		"transformIgnorePatterns": ["node_modules/"]
 	},
 	"license": "UNLICENSED",
 	"main": "index.js",
