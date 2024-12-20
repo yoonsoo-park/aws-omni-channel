@@ -5,17 +5,20 @@ import {
 	StageableStackProps,
 	TargetAccount,
 } from '@ncino/aws-cdk';
+
+// aws imports
 import { Aws, Fn, Tags, RemovalPolicy } from 'aws-cdk-lib';
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
-import { ComputeResources } from './compute-resource';
-import { PythonLambda } from '../lambda/python-lambda';
-import { version } from '../../../package.json';
-import { AppTempBucket } from '../storage/bucket';
 import { Table, AttributeType, BillingMode } from 'aws-cdk-lib/aws-dynamodb';
 import * as appsync from 'aws-cdk-lib/aws-appsync';
 import { StateMachine } from 'aws-cdk-lib/aws-stepfunctions';
-import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
+
+// local imports
+import { version } from '../../../package.json';
+import { StateMachines } from './state-machines/state-machines';
+import { PythonLambda } from '../lambda/python-lambda';
+import { AppTempBucket } from '../storage/bucket';
 
 export class OmniChannelComputeStack extends StageableStack {
 	appTemp_lambda: PythonLambda;
@@ -97,13 +100,6 @@ export class OmniChannelComputeStack extends StageableStack {
 			xrayEnabled: true,
 		});
 
-		// Create State Machine for user context management
-		const logGroup = new LogGroup(this, 'UserContextStateMachineLogs', {
-			logGroupName: `/aws/vendedlogs/states/${feature.getFullName('UserContextStateMachine')}-${stage}`,
-			retention: RetentionDays.ONE_MONTH,
-			removalPolicy: RemovalPolicy.DESTROY,
-		});
-
 		// Add these resources to environment for lambda functions
 		environment['USER_CONTEXT_TABLE'] = this.userContextTable.tableName;
 		environment['DBS_API_URL'] = this.dbsApi.graphqlUrl;
@@ -113,11 +109,17 @@ export class OmniChannelComputeStack extends StageableStack {
 		//* Build state machine. node lambdas.    *//
 		//* inject python lambdas.                *//
 		//* 🏗️ ******************************** 🏗️ *//
-		new ComputeResources({
+		const stateMachines = new StateMachines({
 			feature,
 			environment,
 			stack: this,
 		});
+
+		// Add permissions for the state machine to access DynamoDB
+		this.userContextTable.grantReadWriteData(stateMachines.getUserContextStateMachine());
+
+		// Add permissions for the state machine to invoke AppSync API
+		this.dbsApi.grantMutation(stateMachines.getUserContextStateMachine());
 
 		Tags.of(this).add('env', feature.getContext('suffix'));
 		Tags.of(this).add('version', version);

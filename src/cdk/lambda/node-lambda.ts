@@ -11,6 +11,10 @@ import { Architecture } from 'aws-cdk-lib/aws-lambda';
  */
 export interface NodeLambdaFunctions {
 	dataModelDiffProcessLambda: NodejsFunction;
+	validateTokenLambda: NodejsFunction;
+	checkCacheLambda: NodejsFunction;
+	fetchProductAccessLambda: NodejsFunction;
+	updateContextLambda: NodejsFunction;
 }
 
 export class Lambda {
@@ -68,6 +72,26 @@ export class Lambda {
 			dataModelDiffProcessLambda: this.createLambdaFunction({
 				name: 'DataModelDiffProcessLambda',
 				dirName: 'data-model-diff-process-lambda',
+				props: this.appTempLambdaProperties,
+			}),
+			validateTokenLambda: this.createLambdaFunction({
+				name: 'ValidateTokenLambda',
+				dirName: 'user-context/validate-token',
+				props: this.appTempLambdaProperties,
+			}),
+			checkCacheLambda: this.createLambdaFunction({
+				name: 'CheckCacheLambda',
+				dirName: 'user-context/check-cache',
+				props: this.appTempLambdaProperties,
+			}),
+			fetchProductAccessLambda: this.createLambdaFunction({
+				name: 'FetchProductAccessLambda',
+				dirName: 'user-context/fetch-product-access',
+				props: this.appTempLambdaProperties,
+			}),
+			updateContextLambda: this.createLambdaFunction({
+				name: 'UpdateContextLambda',
+				dirName: 'user-context/update-context',
 				props: this.appTempLambdaProperties,
 			}),
 		};
